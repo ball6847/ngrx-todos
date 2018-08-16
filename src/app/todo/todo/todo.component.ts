@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { combineLatest } from 'rxjs/operators';
-import * as uuid from 'uuid/v1';
+import { Store } from '@ngrx/store';
+import { Observable } from 'rxjs';
 import { TodoItem } from '../interfaces';
-import { TodoService } from '../todo.service';
+import { AddTodo, ToggleTodo, UpdateFilter } from '../state/todo.actions';
+import { TodoState } from '../state/todo.reducer';
+import { filteredTodosSelector } from '../state/todo.selectors';
 
 @Component({
   selector: 'app-todo',
@@ -12,33 +13,22 @@ import { TodoService } from '../todo.service';
 })
 export class TodoComponent implements OnInit {
   items: Observable<TodoItem[]>;
-  search = new BehaviorSubject<string>('');
 
-  constructor(private todoService: TodoService) {}
+  constructor(private store: Store<TodoState>) {}
 
   ngOnInit() {
-    this.items = this.todoService
-      .getTodos()
-      .pipe(
-        combineLatest(this.search.asObservable(), (todos, search) =>
-          todos.filter(t => t.title.includes(search))
-        )
-      );
+    this.items = this.store.select(filteredTodosSelector);
   }
 
   addNewTodo(title: string) {
-    this.todoService.addTodo({
-      id: uuid(),
-      title,
-      completed: false
-    });
+    this.store.dispatch(new AddTodo(title));
   }
 
   toggleTodo(todo: TodoItem) {
-    this.todoService.toggleTodo(todo);
+    this.store.dispatch(new ToggleTodo(todo));
   }
 
   filterChange(filter: string) {
-    this.search.next(filter);
+    this.store.dispatch(new UpdateFilter(filter));
   }
 }
