@@ -1,10 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { Store } from '@ngrx/store';
-import { Observable } from 'rxjs';
+import { combineLatest, Observable } from 'rxjs';
 import { TodoItem } from '../interfaces';
 import { AddTodo, ToggleTodo, UpdateFilter } from '../state/todo.actions';
 import { TodoState } from '../state/todo.reducer';
-import { filteredTodosSelector } from '../state/todo.selectors';
 
 @Component({
   selector: 'app-todo',
@@ -17,7 +16,14 @@ export class TodoComponent implements OnInit {
   constructor(private store: Store<TodoState>) {}
 
   ngOnInit() {
-    this.items = this.store.select(filteredTodosSelector);
+    const todos$ = this.store.select(state => state.todo.todos);
+    const filter$ = this.store.select(state => state.todo.filter);
+
+    this.items = combineLatest(
+      todos$,
+      filter$,
+      (todos, filter) => (filter ? todos.filter(todo => todo.title.includes(filter)) : todos)
+    );
   }
 
   addNewTodo(title: string) {
